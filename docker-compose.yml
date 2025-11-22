@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres
-    container_name: nestjs-starter-postgres
+    container_name: nestjs-auth-postgres
     restart: always
     shm_size: 128mb
     ports:
@@ -13,7 +13,7 @@ services:
     volumes:
       - ./pgdata:/var/lib/postgresql
     networks:
-      - nestjs-starter-network
+      - nestjs-auth-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: Dockerfile
       target: prerelease
-    container_name: nestjs-starter-app
+    container_name: nestjs-auth-api
     environment:
       - PORT=${PORT}
       - NODE_ENV=delevopment
@@ -35,7 +35,7 @@ services:
     volumes:
       - ./src:/usr/src/app/src
     networks:
-      - nestjs-starter-network
+      - nestjs-auth-network
     depends_on:
       db:
         condition: service_healthy
@@ -48,7 +48,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: nestjs-starter-pgadmin
+    container_name: nestjs-auth-pgadmin
     restart: always
     ports:
       - '${PGADMIN_HOST_PORT}:${PGADMIN_CONTAINER_PORT}'
@@ -60,9 +60,9 @@ services:
     volumes:
       - ./pgadmin:/var/lib/pgadmin
     networks:
-      - nestjs-starter-network
+      - nestjs-auth-network
 
 networks:
-  nestjs-starter-network:
+  nestjs-auth-network:
     driver: bridge
-    name: nestjs-starter-network
+    name: nestjs-auth-network

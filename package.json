@@ -1,7 +1,7 @@
 {
-	"name": "nestjs-starter",
+	"name": "nestjs-authentication",
 	"version": "0.0.1",
-	"description": "",
+	"description": "JWT authentication in a NestJS application. Includes refresh token authentication to refresh our JWT and prevent users from having to authenticate",
 	"author": "",
 	"private": true,
 	"license": "UNLICENSED",
