@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres
+    container_name: nestjs-starter-postgres
+    restart: always
+    shm_size: 128mb
+    ports:
+      - '${POSTGRES_PORT}:5432'
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - ./pgdata:/var/lib/postgresql
+    networks:
+      - nestjs-starter-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prerelease
+    container_name: nestjs-starter-app
+    environment:
+      - PORT=${PORT}
+      - NODE_ENV=delevopment
+    ports:
+      - '${PORT}:${PORT}'
+    volumes:
+      - ./src:/usr/src/app/src
+    networks:
+      - nestjs-starter-network
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://${APP_HOST}:${PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: nestjs-starter-pgadmin
+    restart: always
+    ports:
+      - '${PGADMIN_HOST_PORT}:${PGADMIN_CONTAINER_PORT}'
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    depends_on:
+      - db
+    volumes:
+      - ./pgadmin:/var/lib/pgadmin
+    networks:
+      - nestjs-starter-network
+
+networks:
+  nestjs-starter-network:
+    driver: bridge
+    name: nestjs-starter-network
