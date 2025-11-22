@@ -14,5 +14,4 @@ helm-charts
 .idea
 coverage*
 .husky
-/pgadmin
-/pgdata
+/mongodata

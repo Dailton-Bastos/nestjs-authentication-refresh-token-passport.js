@@ -1,21 +1,19 @@
 services:
-  db:
-    image: postgres
-    container_name: nestjs-auth-postgres
+  mongo:
+    image: mongo
+    container_name: nestjs-auth-mongo
     restart: always
-    shm_size: 128mb
     ports:
-      - '${POSTGRES_PORT}:5432'
+      - '${MONGO_PORT}:27017'
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     volumes:
-      - ./pgdata:/var/lib/postgresql
+      - ./mongodata:/data/db
     networks:
       - nestjs-auth-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -37,7 +35,7 @@ services:
     networks:
       - nestjs-auth-network
     depends_on:
-      db:
+      mongo:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://${APP_HOST}:${PORT}/health"]
@@ -46,19 +44,19 @@ services:
       retries: 3
       start_period: 30s
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: nestjs-auth-pgadmin
+  mongo-express:
+    image: mongo-express
+    container_name: nestjs-auth-mongo-express
     restart: always
     ports:
-      - '${PGADMIN_HOST_PORT}:${PGADMIN_CONTAINER_PORT}'
+      - '${ME_CONFIG_HOST_PORT}:${ME_CONFIG_CONTAINER_PORT}'
     environment:
-      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
-      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - ME_CONFIG_MONGODB_URL=mongodb://${MONGO_INITDB_ROOT_USERNAME}:${MONGO_INITDB_ROOT_PASSWORD}@${MONGO_HOST}:${MONGO_PORT}
+      - ME_CONFIG_BASICAUTH_ENABLED=${ME_CONFIG_BASICAUTH_ENABLED}
+      - ME_CONFIG_BASICAUTH_USERNAME=${ME_CONFIG_BASICAUTH_USERNAME}
+      - ME_CONFIG_BASICAUTH_PASSWORD=${ME_CONFIG_BASICAUTH_PASSWORD}
     depends_on:
-      - db
-    volumes:
-      - ./pgadmin:/var/lib/pgadmin
+      - mongo
     networks:
       - nestjs-auth-network
 
