@@ -2,8 +2,9 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import { compare } from "bcryptjs";
+import { compare, hash } from "bcryptjs";
 import type { Response } from "express";
+import type { Types } from "mongoose";
 import { User } from "users/schema/user.schema";
 import { UsersService } from "users/users.service";
 import type { TokenPayload } from "./token-payload.interface";
@@ -29,6 +30,18 @@ export class AuthService {
 				),
 		);
 
+		const expiresRefreshToken = new Date();
+
+		expiresRefreshToken.setMilliseconds(
+			expiresRefreshToken.getTime() +
+				parseInt(
+					this.configService.getOrThrow<string>(
+						"JWT_REFRESH_TOKEN_EXPIRATION_MS",
+					),
+					10,
+				),
+		);
+
 		const tokenPayload: TokenPayload = {
 			userId: user._id,
 		};
@@ -47,7 +60,24 @@ export class AuthService {
 			expires: expiresAccessToken,
 		});
 
-		return user;
+		const refreshToken = this.jwtService.sign(tokenPayload, {
+			secret: this.configService.getOrThrow<string>("JWT_REFRESH_TOKEN_SECRET"),
+			expiresIn: `${this.configService.getOrThrow<number>(
+				"JWT_REFRESH_TOKEN_EXPIRATION_MS",
+			)}ms`,
+		});
+
+		await this.usersService.updateUser(
+			{ _id: user._id },
+			{ $set: { refreshToken: await hash(refreshToken, 10) } },
+		);
+
+		response.cookie("Refresh", refreshToken, {
+			httpOnly: true,
+			secure:
+				this.configService.getOrThrow<string>("NODE_ENV") === "production",
+			expires: expiresRefreshToken,
+		});
 	}
 
 	async verifyUser(email: string, password: string) {
@@ -63,6 +93,25 @@ export class AuthService {
 			return user;
 		} catch {
 			throw new UnauthorizedException("Invalid credentials");
+		}
+	}
+
+	async verifyUserRefreshToken(refreshToken: string, userId: Types.ObjectId) {
+		try {
+			const user = await this.usersService.getUser({ _id: userId });
+
+			const authenticated = await compare(
+				refreshToken,
+				user.refreshToken ?? "",
+			);
+
+			if (!authenticated) {
+				throw new UnauthorizedException("Invalid credentials");
+			}
+
+			return user;
+		} catch {
+			throw new UnauthorizedException("Refresh token is not valid");
 		}
 	}
 }

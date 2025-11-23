@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import bcrypt from "bcryptjs";
-import type { Model } from "mongoose";
+import type { Model, QueryFilter, UpdateQuery } from "mongoose";
 import type { CreateUserRequest } from "./dto/create-user.request";
 import { User } from "./schema/user.schema";
 
@@ -22,7 +22,7 @@ export class UsersService {
 		return user;
 	}
 
-	async getUser(query: Partial<User>) {
+	async getUser(query: QueryFilter<User>) {
 		const user = await this.userModel.findOne(query).exec();
 
 		if (!user) {
@@ -34,5 +34,9 @@ export class UsersService {
 
 	async getUsers() {
 		return this.userModel.find({});
+	}
+
+	async updateUser(query: QueryFilter<User>, data: UpdateQuery<User>) {
+		return this.userModel.findOneAndUpdate(query, data);
 	}
 }
