@@ -28,10 +28,13 @@ services:
     environment:
       - PORT=${PORT}
       - NODE_ENV=delevopment
+    env_file:
+      - .env
     ports:
       - '${PORT}:${PORT}'
     volumes:
       - ./src:/usr/src/app/src
+      - ./node_modules:/usr/src/app/node_modules
     networks:
       - nestjs-auth-network
     depends_on:
