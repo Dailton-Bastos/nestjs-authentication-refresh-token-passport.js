@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import bcrypt from "bcryptjs";
 import type { Model } from "mongoose";
@@ -20,5 +20,19 @@ export class UsersService {
 		}).save();
 
 		return user;
+	}
+
+	async getUser(query: Partial<User>) {
+		const user = await this.userModel.findOne(query).exec();
+
+		if (!user) {
+			throw new NotFoundException("User not found");
+		}
+
+		return user;
+	}
+
+	async getUsers() {
+		return this.userModel.find({});
 	}
 }
